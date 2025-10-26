@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+*.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# Firebase credentials
+*firebase*.json
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# React
+.cache/
+public/build/
+
+# Models
+models/
+*.pkl
+*.h5
+*.onnx
+
+# Videos and images (except sample)
+*.mp4
+*.avi
+*.mov
+*.jpg
+*.jpeg
+*.png
+!sample.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
