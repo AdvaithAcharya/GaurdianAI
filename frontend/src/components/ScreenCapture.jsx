@@ -119,15 +119,15 @@ export function ScreenCapture() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">🖥️ CCTV Monitor Overlay</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold mb-2 text-gray-100">🖥️ CCTV Monitor Overlay</h2>
+        <p className="text-gray-300">
           Capture your CCTV monitoring software screen to enable AI detection on existing camera feeds
         </p>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-semibold text-blue-900 mb-2">📌 How it works:</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="rounded-xl p-4 bg-white/5 backdrop-blur border border-white/10 text-gray-300">
+        <h4 className="font-semibold text-gray-100 mb-2">📌 How it works:</h4>
+        <ul className="text-sm space-y-1">
           <li>1. Open your CCTV monitoring app (shows all camera views)</li>
           <li>2. Click "Start Screen Capture" below</li>
           <li>3. Select the CCTV app window when prompted</li>
@@ -135,7 +135,7 @@ export function ScreenCapture() {
         </ul>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="rounded-xl p-6 bg-white/10 backdrop-blur border border-white/20 text-gray-100">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Monitor Name (optional)</label>
@@ -144,7 +144,7 @@ export function ScreenCapture() {
               value={monitorName}
               onChange={(e) => setMonitorName(e.target.value)}
               disabled={capturing}
-              className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 rounded bg-white/5 border border-white/20 text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
               placeholder="e.g., ICU Cameras, Ward Monitors"
             />
           </div>
@@ -175,7 +175,7 @@ export function ScreenCapture() {
                     <span>Specific Window/Tab</span>
                   </label>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-300 mt-1">
                   {captureMode === 'screen' 
                     ? 'Monitor your entire screen - good for multiple CCTV views'
                     : 'Monitor a specific window - good for single CCTV app'
@@ -194,9 +194,9 @@ export function ScreenCapture() {
                   value={fps}
                   onChange={(e) => setFps(parseInt(e.target.value))}
                   disabled={capturing}
-                  className="w-full disabled:opacity-50"
+                  className="w-full disabled:opacity-50 accent-emerald-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-300 mt-1">
                   Higher FPS = Better detection but more CPU usage
                 </p>
           </div>
@@ -205,14 +205,14 @@ export function ScreenCapture() {
                 {!capturing ? (
                   <button
                     onClick={startCapture}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                    className="px-6 py-3 bg-emerald-500/90 text-white rounded-lg hover:bg-emerald-500 font-medium"
                   >
                     🎥 Start Screen Capture
                   </button>
                 ) : (
                   <button
                     onClick={stopCapture}
-                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                    className="px-6 py-3 bg-red-500/90 text-white rounded-lg hover:bg-red-500 font-medium"
                   >
                     ⬛ Stop Capture
                   </button>
@@ -221,17 +221,17 @@ export function ScreenCapture() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="bg-gray-800 text-white px-4 py-2 flex justify-between items-center">
+      <div className="rounded-xl overflow-hidden bg-white/10 backdrop-blur border border-white/20 text-gray-100">
+            <div className="bg-black/40 text-gray-100 px-4 py-2 flex justify-between items-center border-b border-white/10">
               <h3 className="font-semibold">Preview</h3>
               {capturing && (
                 <span className="flex items-center space-x-2">
-                  <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                   <span className="text-sm">CAPTURING</span>
                 </span>
               )}
             </div>
-            <div className="relative bg-gray-900" style={{ aspectRatio: '16/9' }}>
+            <div className="relative bg-black/40" style={{ aspectRatio: '16/9' }}>
               <video
                 ref={videoRef}
                 className="w-full h-full object-contain"

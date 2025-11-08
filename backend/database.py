@@ -67,6 +67,27 @@ class Database:
             # Rooms indexes
             await self.db.rooms.create_index("room_number", unique=True)
             
+            # Contacts indexes
+            try:
+                contacts = self.db.contacts
+                # Drop legacy wrong unique index on 'phone' if it exists
+                try:
+                    indexes = await contacts.index_information()
+                    if "phone_1" in indexes:
+                        await contacts.drop_index("phone_1")
+                        logger.info("Dropped legacy contacts index 'phone_1'")
+                except Exception as e:
+                    logger.warning(f"Could not inspect/drop legacy contacts index: {e}")
+                # Ensure unique index on phone_number, ignoring missing/empty values
+                await contacts.create_index(
+                    "phone_number",
+                    name="phone_number_unique",
+                    unique=True,
+                    partialFilterExpression={"phone_number": {"$exists": True, "$type": "string"}},
+                )
+            except Exception as e:
+                logger.error(f"Error ensuring contacts indexes: {e}")
+            
             # Alert logs indexes
             await self.db.alert_logs.create_index("alert_id")
             await self.db.alert_logs.create_index("timestamp")

@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     
     # Vosk Model Path
     VOSK_MODEL_PATH: str = "models/vosk-model-small-en-us-0.15"
+
+    # Phone normalization
+    DEFAULT_COUNTRY_CODE: str = "+1"  # Used to format bare numbers to E.164
     
     class Config:
         env_file = ".env"

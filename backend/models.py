@@ -71,7 +71,8 @@ class Contact(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     name: str
     role: str  # "nurse", "doctor", "emergency"
-    phone_number: str
+    # Require E.164 format (e.g., +15551234567)
+    phone_number: str = Field(..., pattern=r"^\+[1-9]\d{7,14}$")
     firebase_token: Optional[str] = None
     email: Optional[str] = None
     priority: int = 1  # Lower number = higher priority for escalation

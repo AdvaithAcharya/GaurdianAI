@@ -2,13 +2,20 @@
 GuardianAI - Main FastAPI Application
 Privacy-First Patient Distress Detection System
 """
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Optional
 import logging
+import os
+from datetime import datetime
+
+from dotenv import load_dotenv
+
+# Load environment variables from .env (in addition to pydantic settings)
+load_dotenv()
 
 from config import settings
 from database import database
@@ -16,6 +23,12 @@ from models import Alert, Patient, Room, Contact, AlertLog
 from video_processor import VideoStreamManager
 from alert_manager import AlertManager
 from api import alerts, patients, rooms, contacts, streams
+from pydantic import BaseModel
+try:
+    from twilio.rest import Client as TwilioClient
+    TWILIO_IMPORT_OK = True
+except Exception:
+    TWILIO_IMPORT_OK = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +45,25 @@ async def lifespan(app: FastAPI):
     # Startup
     await database.connect()
     logger.info("Connected to MongoDB")
+
+    # Initialize Twilio client (optional)
+    app.state.twilio_client = None
+    app.state.twilio_from_number = None
+    if TWILIO_IMPORT_OK:
+        sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '') or os.getenv('TWILIO_SID', '')
+        token = getattr(settings, 'TWILIO_AUTH_TOKEN', '') or os.getenv('TWILIO_TOKEN', '')
+        from_number = getattr(settings, 'TWILIO_PHONE_NUMBER', '') or os.getenv('TWILIO_PHONE_NUMBER', '')
+        if sid and token and from_number:
+            try:
+                app.state.twilio_client = TwilioClient(sid, token)
+                app.state.twilio_from_number = from_number
+                logger.info("Twilio client initialized in main.py")
+            except Exception as e:
+                logger.error(f"Failed to initialize Twilio client: {e}")
+        else:
+            logger.warning("Twilio credentials not set; voice call escalation disabled for /api/alert endpoint")
+    else:
+        logger.warning("Twilio SDK not installed; voice call escalation disabled for /api/alert endpoint")
     
     # Start background tasks
     asyncio.create_task(video_manager.process_streams())
@@ -116,6 +148,12 @@ async def health_check():
     }
 
 
+@app.get("/status")
+async def status():
+    """Simple status endpoint (production-ready liveness)"""
+    return {"ok": True, "service": "guardian_ai_backend"}
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""
@@ -137,6 +175,101 @@ async def websocket_endpoint(websocket: WebSocket):
 app.state.ws_manager = manager
 app.state.video_manager = video_manager
 app.state.alert_manager = alert_manager
+
+
+class AlertPayload(BaseModel):
+    patient_id: str
+    timestamp: str
+    type: Optional[str] = None  # e.g., 'distress', 'gesture', 'fall'
+
+
+async def trigger_twilio_call(patient_id: str):
+    """Initiate a Twilio voice call with a persistent message for the top-priority active contact.
+    Runs in a background task to avoid blocking request handlers.
+    """
+    try:
+        import anyio
+        # Fetch top priority active contact
+        collection = database.get_collection("contacts")
+        doc = await collection.find({"active": True}).sort("priority", 1).limit(1).to_list(length=1)
+        if not doc:
+            logger.warning("No active contacts available for Twilio call")
+            return
+        to_number = doc[0].get("phone_number")
+        if not to_number:
+            logger.warning("Top contact has no phone_number; skipping call")
+            return
+        # Build TwiML with infinite loop (loop=0)
+        twiml = (
+            f"<Response>"
+            f"<Say voice=\"alice\" loop=\"0\">"
+            f"GuardianAI critical alert for patient {patient_id}. Please check immediately."
+            f"</Say>"
+            f"</Response>"
+        )
+        # Resolve client/from number from either main app state or alert_manager
+        client = getattr(app.state, 'twilio_client', None) or getattr(app.state.alert_manager, 'twilio_client', None)
+        from_number = getattr(app.state, 'twilio_from_number', None) or getattr(settings, 'TWILIO_PHONE_NUMBER', '')
+        if not client or not from_number:
+            logger.warning("Twilio client or from number not configured; cannot place call")
+            return
+        def _call_sync():
+            client.calls.create(twiml=twiml, to=to_number, from_=from_number)
+        await anyio.to_thread.run_sync(_call_sync)
+        logger.info(f"Twilio call initiated to {to_number} for patient {patient_id}")
+    except Exception as e:
+        logger.error(f"Error in trigger_twilio_call: {e}")
+
+
+@app.post("/api/alert")
+async def create_alert_endpoint(payload: AlertPayload, background_tasks: BackgroundTasks):
+    """Receive alert from AI detector, store in Mongo, and escalate via Twilio in background."""
+    try:
+        # Normalize fields
+        alert_type = (payload.type or "distress").lower()
+        try:
+            # Parse timestamp if provided; otherwise use now
+            ts = datetime.fromisoformat(payload.timestamp.replace("Z", "+00:00")) if payload.timestamp else datetime.utcnow()
+        except Exception:
+            ts = datetime.utcnow()
+        description = f"AI detected {alert_type} for patient {payload.patient_id}"
+        
+        # Store alert in MongoDB with fields that the frontend expects
+        collection = database.get_collection("alerts")
+        doc = {
+            "alert_type": alert_type,
+            "room_id": None,
+            "patient_id": payload.patient_id,
+            "description": description,
+            "status": "active",
+            "confidence": None,
+            "timestamp": ts,
+            "acknowledged": False,
+            "escalation_level": 0,
+            "source": "ai_detector",
+            "created_at": datetime.utcnow(),
+        }
+        result = await collection.insert_one(doc)
+        alert_id = str(result.inserted_id)
+        
+        # Broadcast to dashboard via WebSocket
+        try:
+            await app.state.ws_manager.broadcast({
+                "type": "alert_created",
+                "alert_id": alert_id,
+                "alert_type": alert_type,
+                "patient_id": payload.patient_id,
+                "timestamp": ts.isoformat()
+            })
+        except Exception as e:
+            logger.debug(f"WS broadcast failed (non-fatal): {e}")
+        
+        # Trigger Twilio call in background
+        background_tasks.add_task(trigger_twilio_call, payload.patient_id)
+        return {"ok": True, "alert_id": alert_id}
+    except Exception as e:
+        logger.error(f"Error creating alert: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

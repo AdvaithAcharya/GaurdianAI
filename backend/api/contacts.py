@@ -7,8 +7,17 @@ from bson import ObjectId
 
 from database import database
 from models import Contact
+from config import settings
+from fastapi import HTTPException
+import re
 
 router = APIRouter()
+
+_E164 = re.compile(r"^\+[1-9]\d{7,14}$")
+
+def _assert_e164(raw: str):
+    if not raw or not _E164.match(str(raw)):
+        raise HTTPException(status_code=422, detail="phone_number must be E.164 format (e.g., +15551234567) and verified in Twilio for trial accounts")
 
 
 @router.get("/")
@@ -72,6 +81,7 @@ async def create_contact(contact: Contact):
     try:
         from datetime import datetime
         collection = database.get_collection("contacts")
+        _assert_e164(contact.phone_number)
         contact_dict = {
             "name": contact.name,
             "role": contact.role,
@@ -104,6 +114,7 @@ async def update_contact(contact_id: str, contact: Contact):
     """Update a contact"""
     try:
         collection = database.get_collection("contacts")
+        _assert_e164(contact.phone_number)
         contact_dict = {
             "name": contact.name,
             "role": contact.role,

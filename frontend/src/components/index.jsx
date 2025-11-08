@@ -32,31 +32,31 @@ export function Dashboard({ alerts }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-2">Total Alerts</h3>
+        <div className="rounded-xl p-6 bg-white/10 backdrop-blur border border-white/20 text-gray-100">
+          <h3 className="text-lg font-semibold mb-2 text-gray-100">Total Alerts</h3>
           <p className="text-3xl font-bold">{alerts.length}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-2">Active Alerts</h3>
-          <p className="text-3xl font-bold text-red-600">{activeAlerts.length}</p>
+        <div className="rounded-xl p-6 bg-white/10 backdrop-blur border border-white/20 text-gray-100">
+          <h3 className="text-lg font-semibold mb-2 text-gray-100">Active Alerts</h3>
+          <p className="text-3xl font-bold text-red-300">{activeAlerts.length}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-2">System Status</h3>
-          <p className="text-3xl font-bold text-green-600">Online</p>
+        <div className="rounded-xl p-6 bg-white/10 backdrop-blur border border-white/20 text-gray-100">
+          <h3 className="text-lg font-semibold mb-2 text-gray-100">System Status</h3>
+          <p className="text-3xl font-bold text-emerald-300">Online</p>
         </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold mb-4">Recent Alerts</h2>
+      <div className="rounded-xl p-6 bg-white/10 backdrop-blur border border-white/20">
+        <h2 className="text-xl font-bold mb-4 text-gray-100">Recent Alerts</h2>
         <div className="space-y-2">
           {alerts.slice(0, 5).map(alert => (
-            <div key={alert.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+            <div key={alert.id} className="flex justify-between items-center p-3 rounded bg-white/5 border border-white/10">
               <div>
-                <p className="font-medium">{alert.description}</p>
-                <p className="text-sm text-gray-500">Room: {alert.room_id}</p>
+                <p className="font-medium text-gray-100">{alert.description}</p>
+                <p className="text-sm text-gray-300">Room: {alert.room_id}</p>
               </div>
               <span className={`px-3 py-1 rounded-full text-sm ${
-                alert.status === 'active' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                alert.status === 'active' ? 'bg-red-500/20 text-red-200' : 'bg-emerald-500/20 text-emerald-200'
               }`}>
                 {alert.status}
               </span>
@@ -98,8 +98,8 @@ export function AlertsPanel({ alerts, onAlertsUpdate }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">Alert Management</h2>
+    <div className="rounded-xl p-6 bg-white/10 backdrop-blur border border-white/20 text-gray-100">
+      <h2 className="text-2xl font-bold mb-6 text-gray-100">Alert Management</h2>
       <div className="space-y-4">
         {alerts.map(alert => (
           <div key={alert.id} className="border border-gray-200 rounded-lg p-4">
@@ -119,16 +119,16 @@ export function AlertsPanel({ alerts, onAlertsUpdate }) {
                     {alert.status}
                   </span>
                 </div>
-                <h3 className="font-semibold text-lg mb-1">{alert.description}</h3>
-                <p className="text-gray-600">Room: {alert.room_id}</p>
-                <p className="text-sm text-gray-500">
+                <h3 className="font-semibold text-lg mb-1 text-gray-100">{alert.description}</h3>
+                <p className="text-gray-300">Room: {alert.room_id}</p>
+                <p className="text-sm text-gray-400">
                   {new Date(alert.timestamp).toLocaleString()}
                 </p>
               </div>
               {alert.status === 'active' && (
                 <button
                   onClick={() => acknowledgeAlert(alert)}
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                  className="bg-emerald-500/90 text-white px-4 py-2 rounded hover:bg-emerald-500"
                 >
                   Acknowledge
                 </button>
@@ -145,13 +145,13 @@ export function AlertsPanel({ alerts, onAlertsUpdate }) {
 export function VideoGrid() {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Video Feeds</h2>
+      <h2 className="text-2xl font-bold text-gray-100">Video Feeds</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[1, 2, 3, 4].map(room => (
-          <div key={room} className="bg-white rounded-lg shadow p-4">
-            <h3 className="font-semibold mb-2">Room {room}</h3>
-            <div className="bg-gray-200 aspect-video rounded flex items-center justify-center">
-              <p className="text-gray-500">Camera feed would appear here</p>
+          <div key={room} className="rounded-xl p-4 bg-white/10 backdrop-blur border border-white/20">
+            <h3 className="font-semibold mb-2 text-gray-100">Room {room}</h3>
+            <div className="bg-white/5 border border-white/10 aspect-video rounded flex items-center justify-center">
+              <p className="text-gray-300">Camera feed would appear here</p>
             </div>
           </div>
         ))}
